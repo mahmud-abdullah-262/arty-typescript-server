@@ -1,8 +1,14 @@
-import { betterAuth } from "better-auth";
+import { betterAuth, string } from "better-auth";
 import { MongoClient } from "mongodb";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 
-const client = new MongoClient(process.env.MONGODB_CONNECTION);
+const uri = process.env.MONGODB_CONNECTION
+
+if (!uri) {
+  throw new Error("MONGODB_CONNECTION environment variable is not defined");
+}
+
+const client = new MongoClient(uri);
 const db = client.db('artly-user');
 
 export const auth = betterAuth({
