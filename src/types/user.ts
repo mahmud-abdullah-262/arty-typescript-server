@@ -10,3 +10,4 @@ export interface User {
   role?: string;
   createdAt: Date;
 }
+

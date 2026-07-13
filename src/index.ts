@@ -6,8 +6,9 @@ import { toNodeHandler } from "better-auth/node";
 import cors from "cors";
 import { MongoClient, ServerApiVersion, Db } from "mongodb";
 import { auth } from "./lib/auth.js";
-import { setDb } from "./lib/db.js";
-import { User } from "./types/user.js";
+import { getBannerCollection, setDb } from "./lib/db.js";
+
+
 
 const uri = process.env.MONGODB_CONNECTION as string;
 const client = new MongoClient(uri, {
@@ -53,10 +54,15 @@ app.use(async (req: Request, res: Response, next) => {
   }
 });
 
-app.get("/api/users/:email", async (req: Request, res: Response) => {
-  const userCollection = db!.collection<User>("user");
-  const result = await userCollection.findOne({ email: req.params.email });
-  res.json(result);
+app.get("/api/banner", async (req: Request, res: Response) => {
+  try {
+    const bannerCollection = getBannerCollection();
+    const result = await bannerCollection.find().toArray();
+    res.json(result);
+  } catch (error) {
+    console.error("Error fetching banners:", error);
+    res.status(500).json({ message: "Failed to fetch banners" });
+  }
 });
 
 // --- লোকাল ডেভেলপমেন্টে সরাসরি সার্ভার চালু করা হবে, Vercel এ নয় ---
