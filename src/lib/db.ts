@@ -1,6 +1,7 @@
 // lib/db.ts
 import { Db } from "mongodb";
 import { Banner } from "../types/banner.js";
+import { ArtworkProduct } from "../types/artWorks.js";
 
 let dbInstance: Db;
 
@@ -18,4 +19,8 @@ export function getDb(): Db {
 // --- Collection-specific getters ---
 export function getBannerCollection() {
   return getDb().collection<Banner>("banner_slides");
+}
+
+export function getArtWorks() {
+  return getDb().collection<ArtworkProduct>("artworks");
 }

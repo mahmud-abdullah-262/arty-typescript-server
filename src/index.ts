@@ -4,9 +4,10 @@ import "dotenv/config";
 import express, { Request, Response } from "express";
 import { toNodeHandler } from "better-auth/node";
 import cors from "cors";
-import { MongoClient, ServerApiVersion, Db } from "mongodb";
+import { MongoClient, ServerApiVersion, Db, ObjectId } from "mongodb";
 import { auth } from "./lib/auth.js";
-import { getBannerCollection, setDb } from "./lib/db.js";
+import { getArtWorks, getBannerCollection, setDb } from "./lib/db.js";
+import { ArtworkProduct } from "./types/artWorks.js";
 
 
 
@@ -58,6 +59,59 @@ app.get("/api/banner", async (req: Request, res: Response) => {
   try {
     const bannerCollection = getBannerCollection();
     const result = await bannerCollection.find().toArray();
+    res.json(result);
+  } catch (error) {
+    console.error("Error fetching banners:", error);
+    res.status(500).json({ message: "Failed to fetch banners" });
+  }
+});
+
+app.get("/api/artworks", async (req: Request, res: Response) => {
+  try {
+    const artWorksCollection = getArtWorks();
+    const result = await artWorksCollection.find().toArray();
+    res.json(result);
+  } catch (error) {
+    console.error("Error fetching banners:", error);
+    res.status(500).json({ message: "Failed to fetch banners" });
+  }
+});
+
+app.get("/api/artworks/:id", async (req: Request, res: Response) => {
+  try {
+    const artWorksCollection = getArtWorks();
+    console.log(req.params.id)
+    const id = req.params.id as string
+    const query = {_id: new ObjectId(id)}
+    const result = await artWorksCollection.findOne(query);
+    res.json(result);
+  } catch (error) {
+    console.error("Error fetching banners:", error);
+    res.status(500).json({ message: "Failed to fetch Artwork" });
+  }
+});
+
+app.get("/api/featuredArtWorks", async (req: Request, res: Response) => {
+  try {
+    const artWorksCollection = getArtWorks();
+    const query = {isFeatured: true}
+    const result = await artWorksCollection.find(query).toArray();
+    res.json(result);
+  } catch (error) {
+    console.error("Error fetching banners:", error);
+    res.status(500).json({ message: "Failed to fetch banners" });
+  }
+});
+
+app.get("/api/newArrivals", async (req: Request, res: Response) => {
+  try {
+    const artWorksCollection = getArtWorks();
+    const query = {isFeatured: false, status: 'available'}
+    const result = await artWorksCollection.
+    find(query)
+    .sort({createdAt: -1})
+    .limit(6)
+    .toArray();
     res.json(result);
   } catch (error) {
     console.error("Error fetching banners:", error);
