@@ -107,9 +107,14 @@ app.get("/api/artworks", async (req: Request, res: Response) => {
     console.log(page, 'page')
     const size = 10// প্রতি পেজে কতগুলো ডাটা দেখাব ঠিক করে দিচ্ছি
 
-    console.log( page, size, 'search') // দেখে নিচ্ছি
-
-    const query = {}
+    const category = req.query.category
+console.log(category,'category')
+   const query = {
+  ...(category && { category })
+}
+   if(category){
+    query.category = category
+   }
     const artWorksCollection = getArtWorks();
     // এটি সরাসরি একটি সংখ্যা (Number) রিটার্ন করবে (যেমন: 150)
 const totalArtworks = await artWorksCollection.countDocuments(query);
