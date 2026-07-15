@@ -48,7 +48,7 @@ interface Specs {
 }
 
 interface Artist {
-  artistID: number;
+  artistID: string;
 }
 
 // মূল ইন্টারফেস

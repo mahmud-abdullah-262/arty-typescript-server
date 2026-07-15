@@ -7,6 +7,13 @@
     "rootDir": "./src",
     "outDir": "dist",
     "strict": true,
-    "skipLibCheck": true
-  }
+    "skipLibCheck": true,
+    
+    // typeRoots-কে অবশ্যই compilerOptions-এর ভেতরে রাখতে হবে
+    "typeRoots": [
+      "./node_modules/@types",
+      "./src/types"
+    ]
+  },
+  "include": ["src/**/*"]
 }

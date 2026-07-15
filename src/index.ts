@@ -1,12 +1,12 @@
 import "dotenv/config";
 
 
-import express, { Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import { toNodeHandler } from "better-auth/node";
 import cors from "cors";
 import { MongoClient, ServerApiVersion, Db, ObjectId } from "mongodb";
 import { auth } from "./lib/auth.js";
-import { getArtWorks, getBannerCollection, setDb } from "./lib/db.js";
+import { getArtist, getArtWorks, getBannerCollection, getSessionCollection, getUserCollection, setDb } from "./lib/db.js";
 import { ArtworkProduct } from "./types/artWorks.js";
 
 
@@ -55,7 +55,39 @@ app.use(async (req: Request, res: Response, next) => {
   }
 });
 
-app.get("/api/banner", async (req: Request, res: Response) => {
+// verification related 
+    const verifyToken = async (req:Request, res:Response, next:NextFunction) => {
+
+  const authHeader = req.headers.authorization;
+ 
+  if(!authHeader){
+    return res.status(401).send({message: 'Unauthorized access'})
+  }
+  const token = authHeader.split(' ')[1]
+   if(!token){
+    return res.status(401).send({message: 'Unauthorized access'})
+  }
+
+  const query = {token: token}
+  const sessionCollection = getSessionCollection()
+  const session = await sessionCollection.findOne(query)
+  if(!session) {
+      return res.status(403).send({message: 'forbidden'})
+  }
+
+  const userQuery = {_id : session?.userId}
+  const userCollection = getUserCollection()
+  const user = await userCollection.findOne(userQuery)
+
+  req.user = user
+next()
+}
+
+
+
+
+// banner data fetch
+app.get("/api/banner",  async (req: Request, res: Response) => {
   try {
     const bannerCollection = getBannerCollection();
     const result = await bannerCollection.find().toArray();
@@ -66,6 +98,7 @@ app.get("/api/banner", async (req: Request, res: Response) => {
   }
 });
 
+// all artwork fetch
 app.get("/api/artworks", async (req: Request, res: Response) => {
   try {
     const artWorksCollection = getArtWorks();
@@ -77,6 +110,7 @@ app.get("/api/artworks", async (req: Request, res: Response) => {
   }
 });
 
+// single artwork fetch
 app.get("/api/artworks/:id", async (req: Request, res: Response) => {
   try {
     const artWorksCollection = getArtWorks();
@@ -91,6 +125,25 @@ app.get("/api/artworks/:id", async (req: Request, res: Response) => {
   }
 });
 
+
+// artists artwork fetch
+app.get("/api/artworkbyartist/:id", verifyToken, async (req: Request, res: Response) => {
+  try {
+    const artWorksCollection = getArtWorks();
+    console.log(req.params.id)
+    const id = req.params.id as string
+    const query = {"artist.artistID" : id}
+    const result = await artWorksCollection.find(query).toArray();
+    res.json(result);
+  } catch (error) {
+    console.error("Error fetching banners:", error);
+    res.status(500).json({ message: "Failed to fetch Artwork" });
+  }
+});
+
+
+
+// featured artwork fetch
 app.get("/api/featuredArtWorks", async (req: Request, res: Response) => {
   try {
     const artWorksCollection = getArtWorks();
@@ -103,6 +156,7 @@ app.get("/api/featuredArtWorks", async (req: Request, res: Response) => {
   }
 });
 
+// new artwork fetch
 app.get("/api/newArrivals", async (req: Request, res: Response) => {
   try {
     const artWorksCollection = getArtWorks();
@@ -118,6 +172,67 @@ app.get("/api/newArrivals", async (req: Request, res: Response) => {
     res.status(500).json({ message: "Failed to fetch banners" });
   }
 });
+
+
+// artist data fetch
+app.get("/api/artist/:id", async (req: Request, res: Response) => {
+  try {
+    const artistCollection = getArtist();
+
+    
+    const id = req.params.id as string;
+    if(!id){
+      return res.status(500).json({message: 'Artist Id not Found'})
+    }
+  
+
+
+
+
+    const query = {artistId: id}
+
+
+    const result = await artistCollection.findOne(query);
+    res.json(result);
+  } catch (error) {
+    console.error("Error fetching artist:", error);
+    res.status(500).json({ message: "Failed to fetch artist" });
+  }
+});
+
+
+// artist data post
+app.post('/api/artist', verifyToken, async (req:Request, res:Response) => {
+  const data = req.body
+  const artistCollection = getArtist()
+  if(!data){
+    return res.status(500).json({messege: 'data did not found'})
+  }
+
+  const result = artistCollection.insertOne(data)
+  if(!result){
+    return res.send(400).json('data insertetion failed')
+  } else{
+    return res.json(result)
+  }
+})
+
+// artist data post
+app.post('/api/artwork', verifyToken, async (req:Request, res:Response) => {
+  const data = req.body
+  const artworkCollection = getArtWorks()
+  if(!data){
+    return res.status(500).json({messege: 'data did not found'})
+  }
+
+  const result = artworkCollection.insertOne(data)
+  if(!result){
+    return res.send(400).json('data insertion failed')
+  } else{
+    return res.json(result)
+  }
+})
+
 
 // --- লোকাল ডেভেলপমেন্টে সরাসরি সার্ভার চালু করা হবে, Vercel এ নয় ---
 if (process.env.NODE_ENV !== "production") {
