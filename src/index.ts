@@ -108,19 +108,38 @@ app.get("/api/artworks", async (req: Request, res: Response) => {
     const size = 10// প্রতি পেজে কতগুলো ডাটা দেখাব ঠিক করে দিচ্ছি
 
     const category = req.query.category
-console.log(category,'category')
-   const query = {
-  ...(category && { category })
+    const sortby = req.query.sortby as string || undefined
+
+   let query:any = {
+  ...(category && { category }),
 }
+
+  let sort:any = {createdAt : -1}
+
    if(category){
     query.category = category
    }
+   if(sortby == 'Featured'){
+    query.isFeatured = true
+   }
+   if(sortby == "Newest"){
+    sort = {createdAt : -1}
+   }
+   if(sortby == 'Oldest'){
+    sort = {createdAt : 1}
+   }
+
+
     const artWorksCollection = getArtWorks();
     // এটি সরাসরি একটি সংখ্যা (Number) রিটার্ন করবে (যেমন: 150)
 const totalArtworks = await artWorksCollection.countDocuments(query);
 
     const skipCount = (page - 1) * size
-    const cursor =  artWorksCollection.find(query).skip(skipCount).limit(size)
+    const cursor =  artWorksCollection
+    .find(query)
+    .skip(skipCount)
+    .sort(sort)
+    .limit(size)
     const result = await cursor.toArray()
      res.json({
       totalArtworks,
