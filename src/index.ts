@@ -8,6 +8,7 @@ import { MongoClient, ServerApiVersion, Db, ObjectId } from "mongodb";
 import { auth } from "./lib/auth.js";
 import { getArtist, getArtWorks, getBannerCollection, getSessionCollection, getUserCollection, setDb } from "./lib/db.js";
 import { ArtworkProduct } from "./types/artWorks.js";
+import { error } from "node:console";
 
 
 
@@ -101,9 +102,29 @@ app.get("/api/banner",  async (req: Request, res: Response) => {
 // all artwork fetch
 app.get("/api/artworks", async (req: Request, res: Response) => {
   try {
+   
+  const page = parseInt(req.query.page as string) || 1;
+    console.log(page, 'page')
+    const size = 10// প্রতি পেজে কতগুলো ডাটা দেখাব ঠিক করে দিচ্ছি
+
+    console.log( page, size, 'search') // দেখে নিচ্ছি
+
+    const query = {}
     const artWorksCollection = getArtWorks();
-    const result = await artWorksCollection.find().toArray();
-    res.json(result);
+    // এটি সরাসরি একটি সংখ্যা (Number) রিটার্ন করবে (যেমন: 150)
+const totalArtworks = await artWorksCollection.countDocuments(query);
+
+    const skipCount = (page - 1) * size
+    const cursor =  artWorksCollection.find(query).skip(skipCount).limit(size)
+    const result = await cursor.toArray()
+     res.json({
+      totalArtworks,
+      size,
+      page,
+      result
+
+    });
+    console.log(totalArtworks, size, page, result.length)
   } catch (error) {
     console.error("Error fetching banners:", error);
     res.status(500).json({ message: "Failed to fetch banners" });
@@ -230,6 +251,31 @@ app.post('/api/artwork', verifyToken, async (req:Request, res:Response) => {
     return res.send(400).json('data insertion failed')
   } else{
     return res.json(result)
+  }
+})
+
+// artwork delete function
+app.delete('/api/deleteArtwork', verifyToken, async (req : Request, res: Response) => {
+try {
+    const id = req.query.id as string; 
+    console.log(id, 'deleted artwork id'); 
+
+   
+    if (!id || id === 'undefined') {
+      return res.status(400).json({ success: false, message: "Valid ID is required" });
+    }
+
+    const query = { _id: new ObjectId(id) };
+    const artworkCollection = getArtWorks()
+    const result = await artworkCollection.deleteOne(query);
+    
+   
+    return res.json(result); 
+
+  } catch (error) {
+    const err = error as Error
+    console.error("Express Delete Error:", error);
+    return res.status(500).json({ success: false, message: err.message });
   }
 })
 
